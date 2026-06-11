@@ -1,0 +1,229 @@
+@page "/"
+@using System.Net.Http.Json
+@using System.ComponentModel.DataAnnotations
+@using System.Text.RegularExpressions
+@inject IHttpClientFactory HttpClientFactory
+@inject ILogger<Home> Logger
+
+<PageTitle>Cadastro de Clientes</PageTitle>
+
+<div class="container mt-5">
+    <h1>Cadastro de Clientes</h1>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Novo Cliente</h5>
+                </div>
+                <div class="card-body">
+                    <EditForm Model="novoCliente" OnValidSubmit="CriarCliente">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary />
+
+                        <div class="mb-3">
+                            <label for="nome" class="form-label">Nome *</label>
+                            <InputText id="nome" class="form-control" @bind-Value="novoCliente.Nome" placeholder="Digite o nome completo" />
+                            <ValidationMessage For="@(() => novoCliente.Nome)" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email *</label>
+                            <InputText id="email" class="form-control" @bind-Value="novoCliente.Email" placeholder="seu@email.com" type="email" />
+                            <ValidationMessage For="@(() => novoCliente.Email)" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="celular" class="form-label">Celular *</label>
+                            <InputText id="celular" class="form-control" @bind-Value="novoCliente.Celular" placeholder="(11) 99999-9999" />
+                            <ValidationMessage For="@(() => novoCliente.Celular)" />
+                            <small class="form-text text-muted">Formato: (XX) 9XXXX-XXXX</small>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary" disabled="@carregando">
+                            @if (carregando)
+                            {
+                                <span>Enviando...</span>
+                            }
+                            else
+                            {
+                                <span>Criar Cliente</span>
+                            }
+                        </button>
+                    </EditForm>
+
+                    @if (!string.IsNullOrEmpty(mensagem))
+                    {
+                        <div class="alert @(tipoMensagem == "sucesso" ? "alert-success" : "alert-danger") mt-3">
+                            @mensagem
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Clientes Cadastrados</h5>
+                </div>
+                <div class="card-body">
+                    @if (carregandoLista)
+                    {
+                        <p>Carregando...</p>
+                    }
+                    else if (clientes == null || !clientes.Any())
+                    {
+                        <p class="text-muted">Nenhum cliente cadastrado.</p>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-sm table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Nome</th>
+                                        <th>Email</th>
+                                        <th>Celular</th>
+                                        <th>Data</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var cliente in clientes)
+                                    {
+                                        <tr>
+                                            <td>@cliente.Nome</td>
+                                            <td>@cliente.Email</td>
+                                            <td>@cliente.Celular</td>
+                                            <td>@cliente.DataCadastro.ToString("dd/MM/yyyy HH:mm")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private HttpClient Http => HttpClientFactory.CreateClient("CadastroAPI");
+    private class ClienteForm
+    {
+        [Required(ErrorMessage = "Nome é obrigatório")]
+        [StringLength(150, MinimumLength = 3, ErrorMessage = "Nome deve ter entre 3 e 150 caracteres")]
+        public string Nome { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Email é obrigatório")]
+        [EmailAddress(ErrorMessage = "Email inválido")]
+        public string Email { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Celular é obrigatório")]
+        public string Celular { get; set; } = string.Empty;
+    }
+
+    private class ClienteDto
+    {
+        public Guid Id { get; set; }
+        public string Nome { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string Celular { get; set; } = string.Empty;
+        public DateTime DataCadastro { get; set; }
+    }
+
+    private ClienteForm novoCliente = new();
+    private List<ClienteDto> clientes = new();
+    private bool carregando = false;
+    private bool carregandoLista = false;
+    private string mensagem = string.Empty;
+    private string tipoMensagem = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CarregarClientes();
+    }
+
+    private async Task CarregarClientes()
+    {
+        try
+        {
+            carregandoLista = true;
+            var response = await Http.GetAsync("/api/clientes");
+
+            if (response.IsSuccessStatusCode)
+            {
+                using var stream = await response.Content.ReadAsStreamAsync();
+                using var json = await System.Text.Json.JsonDocument.ParseAsync(stream);
+                
+                var clientesArray = json.RootElement.GetProperty("clientes");
+                clientes = System.Text.Json.JsonSerializer.Deserialize<List<ClienteDto>>(
+                    clientesArray.GetRawText()) ?? new();
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError($"Erro ao carregar clientes: {ex.Message}");
+            mensagem = "Erro ao carregar clientes";
+            tipoMensagem = "erro";
+        }
+        finally
+        {
+            carregandoLista = false;
+        }
+    }
+
+    private async Task CriarCliente()
+    {
+        // Valida celular
+        if (!ValidarCelular(novoCliente.Celular))
+        {
+            mensagem = "Celular deve estar no formato (XX) 9XXXX-XXXX";
+            tipoMensagem = "erro";
+            return;
+        }
+
+        try
+        {
+            carregando = true;
+            var response = await Http.PostAsJsonAsync("/api/clientes", new
+            {
+                nome = novoCliente.Nome,
+                email = novoCliente.Email,
+                celular = novoCliente.Celular
+            });
+
+            if (response.IsSuccessStatusCode)
+            {
+                mensagem = "Cliente criado com sucesso! Um email será enviado em breve.";
+                tipoMensagem = "sucesso";
+                novoCliente = new();
+                await CarregarClientes();
+            }
+            else
+            {
+                var content = await response.Content.ReadAsStringAsync();
+                mensagem = $"Erro ao criar cliente: {content}";
+                tipoMensagem = "erro";
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError($"Erro ao criar cliente: {ex.Message}");
+            mensagem = $"Erro ao criar cliente: {ex.Message}";
+            tipoMensagem = "erro";
+        }
+        finally
+        {
+            carregando = false;
+        }
+    }
+
+    private bool ValidarCelular(string celular)
+    {
+        // Aceita formatos: (XX) 9XXXX-XXXX, XX 9XXXX-XXXX, +55 XX 9XXXX-XXXX
+        var pattern = @"^\(\d{2}\)\s?9\d{4}-\d{4}$|^\d{2}\s?9\d{4}-\d{4}$|^\+55\s?\d{2}\s?9\d{4}-\d{4}$";
+        return Regex.IsMatch(celular, pattern);
+    }
+}

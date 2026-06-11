@@ -1,0 +1,98 @@
+using CadastroClientes.Application.Interfaces;
+using CadastroClientes.Application.UseCases;
+using CadastroClientes.Infrastructure.Data;
+using CadastroClientes.Infrastructure.Messaging;
+using CadastroClientes.Infrastructure.Repositories;
+using Microsoft.EntityFrameworkCore;
+using RabbitMQ.Client;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// Habilita logging para console (capturado pelo Azure Log Stream)
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.WebHost.CaptureStartupErrors(true).UseSetting("detailedErrors", "true");
+
+builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+// Configura o Banco de Dados para usar SQLite com caminho persistente no Azure
+builder.Services.AddDbContext<AppDbContext>(options =>
+{
+    string dataPath = Path.Combine(AppContext.BaseDirectory, "data");
+    
+    if (string.IsNullOrEmpty(AppContext.BaseDirectory))
+    {
+        dataPath = @"D:\home\site\data";
+    }
+    
+    if (!Directory.Exists(dataPath))
+        Directory.CreateDirectory(dataPath);
+    
+    var dbPath = Path.Combine(dataPath, "cadastroclientes.db");
+    
+    SQLitePCL.Batteries.Init();
+    
+    options.UseSqlite($"Data Source={dbPath}");
+});
+
+// Configura RabbitMQ
+var rabbitMqUri = builder.Configuration["RabbitMQ:Uri"] ?? "amqp://guest:guest@localhost:5672/";
+var connectionFactory = new ConnectionFactory
+{
+    Uri = new Uri(rabbitMqUri),
+    DispatchConsumersAsync = true
+};
+
+builder.Services.AddSingleton<IConnectionFactory>(connectionFactory);
+
+// Registro dos Repositórios e Serviços
+builder.Services.AddScoped<IClienteRepository, ClienteRepository>();
+builder.Services.AddScoped<IMessagingService, NotificationService>();
+
+// Registro dos Use Cases
+builder.Services.AddScoped<CriarClienteUseCase>();
+builder.Services.AddScoped<ListarClientesUseCase>();
+
+// CORS para permitir requisições do Blazor Web
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowBlazor", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
+
+var app = builder.Build();
+
+app.UseSwagger();
+app.UseSwaggerUI();
+
+app.UseHttpsRedirection();
+app.UseCors("AllowBlazor");
+app.MapControllers();
+
+// Cria/Migra o banco na inicialização com logging explícito
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    try
+    {
+        Console.WriteLine(">>> Iniciando EF Core Migrate...");
+        logger.LogInformation("Applying migrations...");
+        db.Database.Migrate();
+        Console.WriteLine(">>> EF Core Migrate concluído.");
+        logger.LogInformation("Migrations applied successfully.");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($">>> Erro ao aplicar migrations: {ex.Message}");
+        logger.LogError(ex, "Error applying migrations");
+    }
+}
+
+app.Run();
