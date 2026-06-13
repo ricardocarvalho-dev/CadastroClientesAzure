@@ -24,12 +24,16 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     
     if (!string.IsNullOrEmpty(connectionString))
     {
-        // Produção: usa SQL Server do Azure
-        options.UseSqlServer(connectionString);
+        options.UseSqlServer(connectionString, sqlOptions =>
+        {
+            sqlOptions.EnableRetryOnFailure(
+                maxRetryCount: 5,
+                maxRetryDelay: TimeSpan.FromSeconds(30),
+                errorNumbersToAdd: null);
+        });
     }
     else
     {
-        // Local: usa SQLite
         string dataPath = Path.Combine(AppContext.BaseDirectory, "data");
         if (!Directory.Exists(dataPath))
             Directory.CreateDirectory(dataPath);
