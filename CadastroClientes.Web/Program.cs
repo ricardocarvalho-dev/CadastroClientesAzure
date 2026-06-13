@@ -20,7 +20,13 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 
 // Configura o Identity para usar o SQL Server (Azure SQL)
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(connectionString));
+    options.UseSqlServer(connectionString, sqlOptions =>
+        sqlOptions.EnableRetryOnFailure(
+            maxRetryCount: 5,
+            maxRetryDelay: TimeSpan.FromSeconds(10),
+            errorNumbersToAdd: null
+        )
+    ));    
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
@@ -89,7 +95,7 @@ using (var scope = app.Services.CreateScope())
     {
         Console.WriteLine(">>> Iniciando EF Core Migrate para Web App no Azure SQL...");
         logger.LogInformation("Applying migrations to Web App...");
-        db.Database.Migrate();
+        await db.Database.MigrateAsync();
         Console.WriteLine(">>> EF Core Migrate concluído com sucesso.");
         logger.LogInformation("Migrations applied successfully.");
     }
