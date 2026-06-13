@@ -100,4 +100,10 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
+app.MapPost("/Account/Logout", async (SignInManager<IdentityUser> signInManager) =>
+{
+    await signInManager.SignOutAsync();
+    return Results.Redirect("/Account/Login");
+});
+
 app.Run();
