@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "PriGUlidVv8=",
+  "dgSpecHash": "fnCIoHEsBvU=",
   "success": true,
-  "projectFilePath": "E:\\AppSistemas\\CadastroClienteAzure\\cadastroclientes\\CadastroClientes.Infrastructure\\CadastroClientes.Infrastructure.csproj",
+  "projectFilePath": "E:\\AppSistemas\\CadastroClienteAzure\\CadastroClientes\\CadastroClientes.Infrastructure\\CadastroClientes.Infrastructure.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Basis Tecnologia\\.nuget\\packages\\fluentvalidation\\11.9.0\\fluentvalidation.11.9.0.nupkg.sha512",
     "C:\\Users\\Basis Tecnologia\\.nuget\\packages\\microsoft.data.sqlite.core\\8.0.0\\microsoft.data.sqlite.core.8.0.0.nupkg.sha512",

@@ -2,7 +2,6 @@ using CadastroClientes.Web.Components;
 using CadastroClientes.Web.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using SQLitePCL;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,21 +14,13 @@ builder.WebHost.CaptureStartupErrors(true).UseSetting("detailedErrors", "true");
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-// Configura SQLite para Identity
-string dataPath = Path.Combine(AppContext.BaseDirectory, "data");
-if (string.IsNullOrEmpty(AppContext.BaseDirectory))
-{
-    dataPath = @"D:\home\site\data";
-}
-if (!Directory.Exists(dataPath))
-    Directory.CreateDirectory(dataPath);
+// Obtém a String de Conexão segura do Azure (definida nas Environment Variables / Configuration)
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
+    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
-var dbPath = Path.Combine(dataPath, "cadastroclientes-web.db");
-
-Batteries.Init();
-
+// Configura o Identity para usar o SQL Server (Azure SQL) do seu cadastrostestes-srv
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlite($"Data Source={dbPath}"));
+    options.UseSqlServer(connectionString));
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
@@ -51,11 +42,11 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.AccessDeniedPath = "/Identity/Account/AccessDenied";
 });
 
-// HttpClient para consumir a API
+// HttpClient para consumir a API utilizando a URL correta mapeada no appsettings.json
 builder.Services.AddHttpClient("CadastroAPI", httpClient =>
 {
-    // Será sobrescrito em appsettings.json, mas aqui tem um padrão
-    httpClient.BaseAddress = new Uri("http://localhost:5001");
+    var apiUri = builder.Configuration["ApiBaseUrl"] ?? "https://ricardodev-solucaoweb-api.azurewebsites.net";
+    httpClient.BaseAddress = new Uri(apiUri);
 });
 
 builder.Services.AddAuthorization();
@@ -80,22 +71,22 @@ app.UseAntiforgery();
 app.MapRazorComponents<App>()
    .AddInteractiveServerRenderMode();
 
-// Cria/Migra o banco na inicialização
+// Cria/Migra o banco de dados do Identity automaticamente na inicialização no Azure SQL
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
     try
     {
-        Console.WriteLine(">>> Iniciando EF Core Migrate para Web App...");
+        Console.WriteLine(">>> Iniciando EF Core Migrate para Web App no Azure SQL...");
         logger.LogInformation("Applying migrations to Web App...");
         db.Database.Migrate();
-        Console.WriteLine(">>> EF Core Migrate concluído.");
+        Console.WriteLine(">>> EF Core Migrate concluído com sucesso.");
         logger.LogInformation("Migrations applied successfully.");
     }
     catch (Exception ex)
     {
-        Console.WriteLine($">>> Erro ao aplicar migrations: {ex.Message}");
+        Console.WriteLine($">>> Erro ao aplicar migrations no Azure SQL: {ex.Message}");
         logger.LogError(ex, "Error applying migrations");
     }
 }
