@@ -18,7 +18,7 @@ builder.Services.AddRazorComponents()
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
-// Configura o Identity para usar o SQL Server (Azure SQL) do seu cadastrostestes-srv
+// Configura o Identity para usar o SQL Server (Azure SQL)
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
 
@@ -32,18 +32,18 @@ builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
     options.Password.RequireNonAlphanumeric = false;
     options.Password.RequireUppercase = true;
     options.Password.RequireLowercase = true;
+    options.User.AllowedUserNameCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+";
+    options.User.RequireUniqueEmail = true;
 })
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
 
-// ✅ Caminho corrigido para as páginas de Login criadas em /Account/Login
 builder.Services.ConfigureApplicationCookie(options =>
 {
     options.LoginPath = "/Account/Login";
     options.AccessDeniedPath = "/Account/Login";
 });
 
-// HttpClient para consumir a API utilizando a URL correta mapeada no appsettings.json
 builder.Services.AddHttpClient("CadastroAPI", httpClient =>
 {
     var apiUri = builder.Configuration["ApiBaseUrl"] ?? "https://ricardodev-solucaoweb-api.azurewebsites.net";
@@ -51,19 +51,16 @@ builder.Services.AddHttpClient("CadastroAPI", httpClient =>
 });
 
 builder.Services.AddAuthorization();
-
 builder.Services.AddCascadingAuthenticationState();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {
     app.UseMigrationsEndPoint();
 }
 else
 {
-    // ✅ Tratamento de erro corrigido sem depender de página /Error
     app.UseExceptionHandler(exceptionHandlerApp =>
     {
         exceptionHandlerApp.Run(async context =>
@@ -77,17 +74,13 @@ else
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
-
-// ✅ Autenticação deve vir antes de Autorização
 app.UseAuthentication();
 app.UseAuthorization();
-
 app.UseAntiforgery();
 
 app.MapRazorComponents<App>()
    .AddInteractiveServerRenderMode();
 
-// Cria/Migra o banco de dados do Identity automaticamente na inicialização no Azure SQL
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
