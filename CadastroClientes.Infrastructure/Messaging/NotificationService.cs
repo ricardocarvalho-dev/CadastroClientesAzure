@@ -64,8 +64,8 @@ public class NotificationService : IMessagingService
         catch (Exception ex)
         {
              _logger.LogError(ex, "Erro ao publicar mensagem no RabbitMQ para cliente {ClienteId}. Cliente salvo mas mensagem não enviada.", clienteId);
-            return Task.CompletedTask; // ✅ Não derruba o cadastro se RabbitMQ falhar
-            //throw;
+            //return Task.CompletedTask; // ✅ Não derruba o cadastro se RabbitMQ falhar
+            throw;
         }
     }
 }
