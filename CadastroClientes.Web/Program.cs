@@ -52,6 +52,8 @@ builder.Services.AddHttpClient("CadastroAPI", httpClient =>
 
 builder.Services.AddAuthorization();
 
+builder.Services.AddCascadingAuthenticationState();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline
