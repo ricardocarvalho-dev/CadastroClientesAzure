@@ -9,95 +9,154 @@
 
 <PageTitle>Cadastro de Clientes</PageTitle>
 
-<div class="container mt-5">
-    <h1>Cadastro de Clientes</h1>
-
-    <div class="row">
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">
-                    <h5>Novo Cliente</h5>
+<div class="cc-wrapper">
+    <header class="cc-header">
+        <div class="cc-header-inner">
+            <div class="cc-logo">
+                <span class="cc-logo-icon">👤</span>
+                <div>
+                    <h1 class="cc-title">Gestão de Clientes</h1>
+                    <p class="cc-subtitle">Sistema de cadastro e acompanhamento</p>
                 </div>
-                <div class="card-body">
-                    <EditForm Model="novoCliente" OnValidSubmit="CriarCliente">
+            </div>
+            <div class="cc-header-stats">
+                <div class="cc-stat">
+                    <span class="cc-stat-num">@clientes.Count</span>
+                    <span class="cc-stat-label">Clientes</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="cc-main">
+        <div class="cc-grid">
+
+            <!-- FORMULÁRIO -->
+            <section class="cc-card cc-form-section">
+                <div class="cc-card-header">
+                    <span class="cc-card-icon">@(modoEdicao ? "✏️" : "➕")</span>
+                    <h2 class="cc-card-title">@(modoEdicao ? "Editar Cliente" : "Novo Cliente")</h2>
+                </div>
+                <div class="cc-card-body">
+                    <EditForm Model="novoCliente" OnValidSubmit="SalvarCliente">
                         <DataAnnotationsValidator />
-                        <ValidationSummary />
 
-                        <div class="mb-3">
-                            <label for="nome" class="form-label">Nome *</label>
-                            <InputText id="nome" class="form-control" @bind-Value="novoCliente.Nome" placeholder="Digite o nome completo" />
-                            <ValidationMessage For="@(() => novoCliente.Nome)" />
+                        <div class="cc-field">
+                            <label class="cc-label">Nome completo <span class="cc-required">*</span></label>
+                            <InputText class="cc-input" @bind-Value="novoCliente.Nome" placeholder="Ex: João da Silva" />
+                            <ValidationMessage For="@(() => novoCliente.Nome)" class="cc-validation" />
                         </div>
 
-                        <div class="mb-3">
-                            <label for="email" class="form-label">Email *</label>
-                            <InputText id="email" class="form-control" @bind-Value="novoCliente.Email" placeholder="seu@email.com" type="email" />
-                            <ValidationMessage For="@(() => novoCliente.Email)" />
+                        <div class="cc-field">
+                            <label class="cc-label">E-mail <span class="cc-required">*</span></label>
+                            <InputText class="cc-input" @bind-Value="novoCliente.Email" placeholder="joao@email.com" type="email" />
+                            <ValidationMessage For="@(() => novoCliente.Email)" class="cc-validation" />
                         </div>
 
-                        <div class="mb-3">
-                            <label for="celular" class="form-label">Celular *</label>
-                            <InputText id="celular" class="form-control" @bind-Value="novoCliente.Celular" placeholder="(11) 99999-9999" />
-                            <ValidationMessage For="@(() => novoCliente.Celular)" />
-                            <small class="form-text text-muted">Formato: (XX) 9XXXX-XXXX</small>
+                        <div class="cc-field">
+                            <label class="cc-label">Celular <span class="cc-required">*</span></label>
+                            <InputText class="cc-input" @bind-Value="novoCliente.Celular" placeholder="(11) 99999-9999" />
+                            <ValidationMessage For="@(() => novoCliente.Celular)" class="cc-validation" />
+                            <small class="cc-hint">Formato: (XX) 9XXXX-XXXX</small>
                         </div>
 
-                        <button type="submit" class="btn btn-primary" disabled="@carregando">
-                            @if (carregando)
+                        <div class="cc-field">
+                            <label class="cc-label">Mensagem de boas-vindas</label>
+                            <InputTextArea class="cc-input cc-textarea" @bind-Value="novoCliente.Mensagem" placeholder="Mensagem que será enviada ao cliente por e-mail..." rows="3" />
+                            <ValidationMessage For="@(() => novoCliente.Mensagem)" class="cc-validation" />
+                            <small class="cc-hint">Opcional · Máx. 500 caracteres</small>
+                        </div>
+
+                        <div class="cc-form-actions">
+                            <button type="submit" class="cc-btn cc-btn-primary" disabled="@carregando">
+                                @if (carregando)
+                                {
+                                    <span class="cc-spinner"></span>
+                                    <span>Salvando...</span>
+                                }
+                                else
+                                {
+                                    <span>@(modoEdicao ? "💾 Salvar alterações" : "✅ Cadastrar cliente")</span>
+                                }
+                            </button>
+                            @if (modoEdicao)
                             {
-                                <span>Enviando...</span>
+                                <button type="button" class="cc-btn cc-btn-secondary" @onclick="CancelarEdicao">
+                                    ✕ Cancelar
+                                </button>
                             }
-                            else
-                            {
-                                <span>Criar Cliente</span>
-                            }
-                        </button>
+                        </div>
                     </EditForm>
 
                     @if (!string.IsNullOrEmpty(mensagem))
                     {
-                        <div class="alert @(tipoMensagem == "sucesso" ? "alert-success" : "alert-danger") mt-3">
-                            @mensagem
+                        <div class="cc-alert @(tipoMensagem == "sucesso" ? "cc-alert-success" : "cc-alert-error")">
+                            @(tipoMensagem == "sucesso" ? "✅" : "⚠️") @mensagem
                         </div>
                     }
                 </div>
-            </div>
-        </div>
+            </section>
 
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">
-                    <h5>Clientes Cadastrados</h5>
+            <!-- LISTA -->
+            <section class="cc-card cc-list-section">
+                <div class="cc-card-header">
+                    <span class="cc-card-icon">📋</span>
+                    <h2 class="cc-card-title">Clientes cadastrados</h2>
+                    <button class="cc-btn-refresh" @onclick="CarregarClientes" title="Atualizar lista">🔄</button>
                 </div>
-                <div class="card-body">
+                <div class="cc-card-body">
                     @if (carregandoLista)
                     {
-                        <p>Carregando...</p>
+                        <div class="cc-loading">
+                            <span class="cc-spinner cc-spinner-dark"></span>
+                            <span>Carregando clientes...</span>
+                        </div>
                     }
-                    else if (clientes == null || !clientes.Any())
+                    else if (!clientes.Any())
                     {
-                        <p class="text-muted">Nenhum cliente cadastrado.</p>
+                        <div class="cc-empty">
+                            <span class="cc-empty-icon">📭</span>
+                            <p>Nenhum cliente cadastrado ainda.</p>
+                        </div>
                     }
                     else
                     {
-                        <div class="table-responsive">
-                            <table class="table table-sm table-striped">
+                        <div class="cc-table-wrap">
+                            <table class="cc-table">
                                 <thead>
                                     <tr>
                                         <th>Nome</th>
-                                        <th>Email</th>
+                                        <th>E-mail</th>
                                         <th>Celular</th>
-                                        <th>Data</th>
+                                        <th>Mensagem</th>
+                                        <th>Cadastro</th>
+                                        <th>Ações</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach (var cliente in clientes)
+                                    @foreach (var c in clientes)
                                     {
-                                        <tr>
-                                            <td>@cliente.Nome</td>
-                                            <td>@cliente.Email</td>
-                                            <td>@cliente.Celular</td>
-                                            <td>@cliente.DataCadastro.ToString("dd/MM/yyyy HH:mm")</td>
+                                        <tr class="@(clienteEditandoId == c.Id ? "cc-row-editing" : "")">
+                                            <td class="cc-td-nome">@c.Nome</td>
+                                            <td class="cc-td-email">@c.Email</td>
+                                            <td>@c.Celular</td>
+                                            <td class="cc-td-msg">
+                                                @if (!string.IsNullOrEmpty(c.Mensagem))
+                                                {
+                                                    <span class="cc-msg-preview" title="@c.Mensagem">
+                                                        @(c.Mensagem.Length > 30 ? c.Mensagem[..30] + "…" : c.Mensagem)
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="cc-no-msg">—</span>
+                                                }
+                                            </td>
+                                            <td class="cc-td-data">@c.DataCadastro.ToString("dd/MM/yyyy")</td>
+                                            <td class="cc-td-actions">
+                                                <button class="cc-btn-action cc-btn-edit" @onclick="() => EditarCliente(c)" title="Editar">✏️</button>
+                                                <button class="cc-btn-action cc-btn-delete" @onclick="() => ConfirmarExclusao(c)" title="Excluir">🗑️</button>
+                                            </td>
                                         </tr>
                                     }
                                 </tbody>
@@ -105,25 +164,151 @@
                         </div>
                     }
                 </div>
+            </section>
+        </div>
+    </main>
+</div>
+
+<!-- MODAL CONFIRMAÇÃO EXCLUSÃO -->
+@if (clienteParaExcluir != null)
+{
+    <div class="cc-modal-overlay" @onclick="CancelarExclusao">
+        <div class="cc-modal" @onclick:stopPropagation>
+            <div class="cc-modal-icon">🗑️</div>
+            <h3 class="cc-modal-title">Excluir cliente?</h3>
+            <p class="cc-modal-text">Tem certeza que deseja excluir <strong>@clienteParaExcluir.Nome</strong>? Esta ação não pode ser desfeita.</p>
+            <div class="cc-modal-actions">
+                <button class="cc-btn cc-btn-danger" @onclick="ExcluirCliente" disabled="@carregando">
+                    @(carregando ? "Excluindo..." : "🗑️ Sim, excluir")
+                </button>
+                <button class="cc-btn cc-btn-secondary" @onclick="CancelarExclusao">Cancelar</button>
             </div>
         </div>
     </div>
-</div>
+}
+
+<style>
+    :root {
+        --cc-bg: #f0f2f5;
+        --cc-surface: #ffffff;
+        --cc-primary: #4f46e5;
+        --cc-primary-dark: #3730a3;
+        --cc-primary-light: #eef2ff;
+        --cc-danger: #dc2626;
+        --cc-danger-light: #fef2f2;
+        --cc-success: #16a34a;
+        --cc-success-light: #f0fdf4;
+        --cc-text: #111827;
+        --cc-text-muted: #6b7280;
+        --cc-border: #e5e7eb;
+        --cc-radius: 12px;
+        --cc-shadow: 0 1px 3px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.06);
+    }
+
+    body { background: var(--cc-bg) !important; }
+
+    .cc-wrapper { min-height: 100vh; background: var(--cc-bg); font-family: 'Segoe UI', system-ui, sans-serif; }
+
+    .cc-header { background: linear-gradient(135deg, var(--cc-primary) 0%, var(--cc-primary-dark) 100%); padding: 1.5rem 2rem; }
+    .cc-header-inner { max-width: 1400px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; }
+    .cc-logo { display: flex; align-items: center; gap: 1rem; }
+    .cc-logo-icon { font-size: 2rem; }
+    .cc-title { color: #fff; font-size: 1.5rem; font-weight: 700; margin: 0; }
+    .cc-subtitle { color: rgba(255,255,255,.7); font-size: .85rem; margin: 0; }
+    .cc-stat { text-align: center; background: rgba(255,255,255,.15); border-radius: 8px; padding: .5rem 1.25rem; }
+    .cc-stat-num { display: block; color: #fff; font-size: 1.75rem; font-weight: 700; line-height: 1; }
+    .cc-stat-label { color: rgba(255,255,255,.7); font-size: .75rem; text-transform: uppercase; letter-spacing: .05em; }
+
+    .cc-main { max-width: 1400px; margin: 0 auto; padding: 2rem; }
+    .cc-grid { display: grid; grid-template-columns: 380px 1fr; gap: 1.5rem; align-items: start; }
+    @@media (max-width: 900px) { .cc-grid { grid-template-columns: 1fr; } }
+
+    .cc-card { background: var(--cc-surface); border-radius: var(--cc-radius); box-shadow: var(--cc-shadow); overflow: hidden; }
+    .cc-card-header { display: flex; align-items: center; gap: .75rem; padding: 1.1rem 1.5rem; border-bottom: 1px solid var(--cc-border); background: #fafafa; }
+    .cc-card-icon { font-size: 1.2rem; }
+    .cc-card-title { font-size: 1rem; font-weight: 600; color: var(--cc-text); margin: 0; flex: 1; }
+    .cc-card-body { padding: 1.5rem; }
+
+    .cc-field { margin-bottom: 1.1rem; }
+    .cc-label { display: block; font-size: .85rem; font-weight: 600; color: var(--cc-text); margin-bottom: .4rem; }
+    .cc-required { color: var(--cc-danger); }
+    .cc-input { width: 100%; padding: .6rem .85rem; border: 1.5px solid var(--cc-border); border-radius: 8px; font-size: .95rem; color: var(--cc-text); transition: border-color .2s, box-shadow .2s; outline: none; box-sizing: border-box; }
+    .cc-input:focus { border-color: var(--cc-primary); box-shadow: 0 0 0 3px rgba(79,70,229,.12); }
+    .cc-textarea { resize: vertical; min-height: 80px; }
+    .cc-hint { font-size: .78rem; color: var(--cc-text-muted); margin-top: .25rem; display: block; }
+    .cc-validation { font-size: .8rem; color: var(--cc-danger); margin-top: .25rem; display: block; }
+
+    .cc-form-actions { display: flex; gap: .75rem; margin-top: 1.25rem; flex-wrap: wrap; }
+    .cc-btn { display: inline-flex; align-items: center; gap: .4rem; padding: .6rem 1.25rem; border-radius: 8px; font-size: .9rem; font-weight: 600; border: none; cursor: pointer; transition: all .2s; }
+    .cc-btn:disabled { opacity: .6; cursor: not-allowed; }
+    .cc-btn-primary { background: var(--cc-primary); color: #fff; }
+    .cc-btn-primary:hover:not(:disabled) { background: var(--cc-primary-dark); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(79,70,229,.3); }
+    .cc-btn-secondary { background: #f3f4f6; color: var(--cc-text); border: 1.5px solid var(--cc-border); }
+    .cc-btn-secondary:hover { background: var(--cc-border); }
+    .cc-btn-danger { background: var(--cc-danger); color: #fff; }
+    .cc-btn-danger:hover:not(:disabled) { background: #b91c1c; }
+    .cc-btn-refresh { background: none; border: none; cursor: pointer; font-size: 1rem; padding: .25rem .5rem; border-radius: 6px; transition: background .2s; margin-left: auto; }
+    .cc-btn-refresh:hover { background: var(--cc-border); }
+
+    .cc-alert { margin-top: 1rem; padding: .75rem 1rem; border-radius: 8px; font-size: .9rem; font-weight: 500; }
+    .cc-alert-success { background: var(--cc-success-light); color: var(--cc-success); border: 1px solid #bbf7d0; }
+    .cc-alert-error { background: var(--cc-danger-light); color: var(--cc-danger); border: 1px solid #fecaca; }
+
+    .cc-spinner { width: 14px; height: 14px; border: 2px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%; display: inline-block; animation: cc-spin .7s linear infinite; }
+    .cc-spinner-dark { border-color: rgba(79,70,229,.2); border-top-color: var(--cc-primary); }
+    @@keyframes cc-spin { to { transform: rotate(360deg); } }
+
+    .cc-table-wrap { overflow-x: auto; }
+    .cc-table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+    .cc-table thead tr { background: var(--cc-primary-light); }
+    .cc-table th { padding: .75rem 1rem; text-align: left; font-size: .78rem; font-weight: 700; color: var(--cc-primary); text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; }
+    .cc-table td { padding: .75rem 1rem; border-bottom: 1px solid var(--cc-border); color: var(--cc-text); vertical-align: middle; }
+    .cc-table tbody tr:hover { background: #f9fafb; }
+    .cc-table tbody tr:last-child td { border-bottom: none; }
+    .cc-row-editing { background: var(--cc-primary-light) !important; }
+    .cc-td-nome { font-weight: 600; }
+    .cc-td-email { color: var(--cc-text-muted); }
+    .cc-td-data { color: var(--cc-text-muted); white-space: nowrap; }
+    .cc-td-msg { max-width: 150px; }
+    .cc-msg-preview { color: var(--cc-text-muted); font-style: italic; cursor: help; }
+    .cc-no-msg { color: var(--cc-border); }
+    .cc-td-actions { white-space: nowrap; }
+    .cc-btn-action { background: none; border: none; cursor: pointer; font-size: 1rem; padding: .3rem .4rem; border-radius: 6px; transition: background .2s; }
+    .cc-btn-edit:hover { background: var(--cc-primary-light); }
+    .cc-btn-delete:hover { background: var(--cc-danger-light); }
+
+    .cc-empty { text-align: center; padding: 2.5rem 1rem; color: var(--cc-text-muted); }
+    .cc-empty-icon { font-size: 2.5rem; display: block; margin-bottom: .75rem; }
+    .cc-loading { display: flex; align-items: center; gap: .75rem; padding: 2rem; color: var(--cc-text-muted); justify-content: center; }
+
+    .cc-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: flex; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(2px); }
+    .cc-modal { background: #fff; border-radius: var(--cc-radius); padding: 2rem; max-width: 420px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,.2); text-align: center; }
+    .cc-modal-icon { font-size: 2.5rem; margin-bottom: .75rem; }
+    .cc-modal-title { font-size: 1.2rem; font-weight: 700; color: var(--cc-text); margin: 0 0 .5rem; }
+    .cc-modal-text { color: var(--cc-text-muted); font-size: .95rem; margin-bottom: 1.5rem; }
+    .cc-modal-actions { display: flex; gap: .75rem; justify-content: center; }
+</style>
 
 @code {
     private HttpClient Http => HttpClientFactory.CreateClient("CadastroAPI");
+
     private class ClienteForm
     {
         [Required(ErrorMessage = "Nome é obrigatório")]
         [StringLength(150, MinimumLength = 3, ErrorMessage = "Nome deve ter entre 3 e 150 caracteres")]
         public string Nome { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Email é obrigatório")]
-        [EmailAddress(ErrorMessage = "Email inválido")]
+        [Required(ErrorMessage = "E-mail é obrigatório")]
+        [EmailAddress(ErrorMessage = "E-mail inválido")]
         public string Email { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Celular é obrigatório")]
         public string Celular { get; set; } = string.Empty;
+
+        [StringLength(500, ErrorMessage = "Mensagem não pode exceder 500 caracteres")]
+        public string Mensagem { get; set; } = string.Empty;
+
+        public Guid? Id { get; set; }
     }
 
     private class ClienteDto
@@ -132,6 +317,7 @@
         public string Nome { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string Celular { get; set; } = string.Empty;
+        public string Mensagem { get; set; } = string.Empty;
         public DateTime DataCadastro { get; set; }
     }
 
@@ -139,6 +325,9 @@
     private List<ClienteDto> clientes = new();
     private bool carregando = false;
     private bool carregandoLista = false;
+    private bool modoEdicao = false;
+    private Guid? clienteEditandoId = null;
+    private ClienteDto? clienteParaExcluir = null;
     private string mensagem = string.Empty;
     private string tipoMensagem = string.Empty;
 
@@ -153,19 +342,13 @@
         {
             carregandoLista = true;
             var response = await Http.GetAsync("/api/clientes");
-
             if (response.IsSuccessStatusCode)
             {
                 using var stream = await response.Content.ReadAsStreamAsync();
                 using var json = await System.Text.Json.JsonDocument.ParseAsync(stream);
-                
                 var clientesArray = json.RootElement.GetProperty("clientes");
-                var options = new System.Text.Json.JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                };
-                clientes = System.Text.Json.JsonSerializer.Deserialize<List<ClienteDto>>(
-                    clientesArray.GetRawText(), options) ?? new();
+                var options = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                clientes = System.Text.Json.JsonSerializer.Deserialize<List<ClienteDto>>(clientesArray.GetRawText(), options) ?? new();
             }
         }
         catch (Exception ex)
@@ -180,10 +363,8 @@
         }
     }
 
-
-    private async Task CriarCliente()
+    private async Task SalvarCliente()
     {
-        // Valida celular
         if (!ValidarCelular(novoCliente.Celular))
         {
             mensagem = "Celular deve estar no formato (XX) 9XXXX-XXXX";
@@ -194,31 +375,117 @@
         try
         {
             carregando = true;
-            var response = await Http.PostAsJsonAsync("/api/clientes", new
+            mensagem = string.Empty;
+
+            HttpResponseMessage response;
+
+            if (modoEdicao && novoCliente.Id.HasValue)
             {
-                nome = novoCliente.Nome,
-                email = novoCliente.Email,
-                celular = novoCliente.Celular
-            });
+                response = await Http.PutAsJsonAsync($"/api/clientes/{novoCliente.Id}", new
+                {
+                    nome = novoCliente.Nome,
+                    email = novoCliente.Email,
+                    celular = novoCliente.Celular,
+                    mensagem = novoCliente.Mensagem
+                });
+            }
+            else
+            {
+                response = await Http.PostAsJsonAsync("/api/clientes", new
+                {
+                    nome = novoCliente.Nome,
+                    email = novoCliente.Email,
+                    celular = novoCliente.Celular,
+                    mensagem = novoCliente.Mensagem
+                });
+            }
 
             if (response.IsSuccessStatusCode)
             {
-                mensagem = "Cliente criado com sucesso! Um email será enviado em breve.";
+                mensagem = modoEdicao ? "Cliente atualizado com sucesso!" : "Cliente cadastrado! Um e-mail será enviado em breve.";
                 tipoMensagem = "sucesso";
                 novoCliente = new();
+                modoEdicao = false;
+                clienteEditandoId = null;
                 await CarregarClientes();
             }
             else
             {
                 var content = await response.Content.ReadAsStringAsync();
-                mensagem = $"Erro ao criar cliente: {content}";
+                mensagem = $"Erro ao salvar cliente: {content}";
                 tipoMensagem = "erro";
             }
         }
         catch (Exception ex)
         {
-            Logger.LogError($"Erro ao criar cliente: {ex.Message}");
-            mensagem = $"Erro ao criar cliente: {ex.Message}";
+            Logger.LogError($"Erro: {ex.Message}");
+            mensagem = $"Erro inesperado: {ex.Message}";
+            tipoMensagem = "erro";
+        }
+        finally
+        {
+            carregando = false;
+        }
+    }
+
+    private void EditarCliente(ClienteDto c)
+    {
+        modoEdicao = true;
+        clienteEditandoId = c.Id;
+        novoCliente = new ClienteForm
+        {
+            Id = c.Id,
+            Nome = c.Nome,
+            Email = c.Email,
+            Celular = c.Celular,
+            Mensagem = c.Mensagem
+        };
+        mensagem = string.Empty;
+    }
+
+    private void CancelarEdicao()
+    {
+        modoEdicao = false;
+        clienteEditandoId = null;
+        novoCliente = new();
+        mensagem = string.Empty;
+    }
+
+    private void ConfirmarExclusao(ClienteDto c)
+    {
+        clienteParaExcluir = c;
+    }
+
+    private void CancelarExclusao()
+    {
+        clienteParaExcluir = null;
+    }
+
+    private async Task ExcluirCliente()
+    {
+        if (clienteParaExcluir == null) return;
+        try
+        {
+            carregando = true;
+            var response = await Http.DeleteAsync($"/api/clientes/{clienteParaExcluir.Id}");
+            if (response.IsSuccessStatusCode)
+            {
+                mensagem = $"Cliente {clienteParaExcluir.Nome} excluído com sucesso.";
+                tipoMensagem = "sucesso";
+                clienteParaExcluir = null;
+                await CarregarClientes();
+            }
+            else
+            {
+                mensagem = "Erro ao excluir cliente.";
+                tipoMensagem = "erro";
+                clienteParaExcluir = null;
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError($"Erro ao excluir: {ex.Message}");
+            mensagem = $"Erro: {ex.Message}";
             tipoMensagem = "erro";
         }
         finally
@@ -229,7 +496,6 @@
 
     private bool ValidarCelular(string celular)
     {
-        // Aceita formatos: (XX) 9XXXX-XXXX, XX 9XXXX-XXXX, +55 XX 9XXXX-XXXX
         var pattern = @"^\(\d{2}\)\s?9\d{4}-\d{4}$|^\d{2}\s?9\d{4}-\d{4}$|^\+55\s?\d{2}\s?9\d{4}-\d{4}$";
         return Regex.IsMatch(celular, pattern);
     }
