@@ -18,38 +18,39 @@ public class NotificationService : IMessagingService
         _connectionFactory = connectionFactory;
     }
 
-    public Task PublicarCriacaoClienteAsync(Guid clienteId, string nome, string email, string celular)
+    public Task PublicarCriacaoClienteAsync(Guid clienteId, string nome, string email, string celular, string mensagem)
     {
         try
         {
             using var connection = _connectionFactory.CreateConnection();
-            using var channel = connection.CreateModel(); // v6: CreateModel() em vez de CreateChannel()
+            using var channel = connection.CreateModel();
 
-            channel.QueueDeclare(                        // v6: síncrono, sem Async
+            channel.QueueDeclare(
                 queue: QUEUE_NAME,
                 durable: true,
                 exclusive: false,
                 autoDelete: false,
                 arguments: null);
 
-            var mensagem = new
+            var payload = new
             {
                 clienteId,
                 nome,
                 email,
                 celular,
+                mensagem,           // ← novo campo
                 dataCadastro = DateTime.UtcNow,
                 tipo = "cliente.criado"
             };
 
-            var json = JsonSerializer.Serialize(mensagem);
+            var json = JsonSerializer.Serialize(payload);
             var body = Encoding.UTF8.GetBytes(json);
 
-            var properties = channel.CreateBasicProperties(); // v6: CreateBasicProperties()
+            var properties = channel.CreateBasicProperties();
             properties.Persistent = true;
             properties.ContentType = "application/json";
 
-            channel.BasicPublish(                        // v6: síncrono, sem Async
+            channel.BasicPublish(
                 exchange: string.Empty,
                 routingKey: QUEUE_NAME,
                 mandatory: false,
@@ -63,8 +64,7 @@ public class NotificationService : IMessagingService
         }
         catch (Exception ex)
         {
-             _logger.LogError(ex, "Erro ao publicar mensagem no RabbitMQ para cliente {ClienteId}. Cliente salvo mas mensagem não enviada.", clienteId);
-            //return Task.CompletedTask; // ✅ Não derruba o cadastro se RabbitMQ falhar
+            _logger.LogError(ex, "Erro ao publicar mensagem no RabbitMQ para cliente {ClienteId}. Cliente salvo mas mensagem não enviada.", clienteId);
             throw;
         }
     }

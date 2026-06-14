@@ -10,27 +10,25 @@ public class ClientesController : ControllerBase
 {
     private readonly CriarClienteUseCase _criarUseCase;
     private readonly ListarClientesUseCase _listarUseCase;
+    private readonly AtualizarClienteUseCase _atualizarUseCase;
+    private readonly ExcluirClienteUseCase _excluirUseCase;
     private readonly ILogger<ClientesController> _logger;
 
     public ClientesController(
         CriarClienteUseCase criarUseCase,
         ListarClientesUseCase listarUseCase,
+        AtualizarClienteUseCase atualizarUseCase,
+        ExcluirClienteUseCase excluirUseCase,
         ILogger<ClientesController> logger)
     {
         _criarUseCase = criarUseCase;
         _listarUseCase = listarUseCase;
+        _atualizarUseCase = atualizarUseCase;
+        _excluirUseCase = excluirUseCase;
         _logger = logger;
     }
 
-    /// <summary>
-    /// Cria um novo cliente
-    /// </summary>
-    /// <param name="dto">Dados do cliente</param>
-    /// <returns>Cliente criado</returns>
     [HttpPost]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> Criar([FromBody] CriarClienteDto dto)
     {
         try
@@ -40,13 +38,12 @@ public class ClientesController : ControllerBase
         }
         catch (InvalidOperationException ex)
         {
-            _logger.LogWarning($"Erro de negócio ao criar cliente: {ex.Message}");
             return BadRequest(new { mensagem = ex.Message });
         }
         catch (Exception ex)
         {
             _logger.LogError($"Erro ao criar cliente: {ex.Message}");
-            return StatusCode(500, new { 
+            return StatusCode(500, new {
                 mensagem = "Erro interno ao criar cliente",
                 erroReal = ex.Message,
                 erroInterno = ex.InnerException?.Message
@@ -54,13 +51,7 @@ public class ClientesController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Lista todos os clientes cadastrados
-    /// </summary>
-    /// <returns>Lista de clientes</returns>
     [HttpGet]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> Listar()
     {
         try
@@ -71,10 +62,49 @@ public class ClientesController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError($"Erro ao listar clientes: {ex.Message}");
-            return StatusCode(500, new { 
-                mensagem = "Erro interno ao listar clientes",
-                erroReal = ex.Message
-            });
+            return StatusCode(500, new { mensagem = "Erro interno ao listar clientes", erroReal = ex.Message });
+        }
+    }
+
+    [HttpPut("{id}")]
+    public async Task<IActionResult> Atualizar(Guid id, [FromBody] CriarClienteDto dto)
+    {
+        try
+        {
+            var cliente = await _atualizarUseCase.Executar(id, dto);
+            return Ok(new { mensagem = "Cliente atualizado com sucesso", cliente });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { mensagem = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { mensagem = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Erro ao atualizar cliente: {ex.Message}");
+            return StatusCode(500, new { mensagem = "Erro interno ao atualizar cliente" });
+        }
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Excluir(Guid id)
+    {
+        try
+        {
+            await _excluirUseCase.Executar(id);
+            return Ok(new { mensagem = "Cliente excluído com sucesso" });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { mensagem = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Erro ao excluir cliente: {ex.Message}");
+            return StatusCode(500, new { mensagem = "Erro interno ao excluir cliente" });
         }
     }
 }

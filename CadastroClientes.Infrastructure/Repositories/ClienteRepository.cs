@@ -42,4 +42,17 @@ public class ClienteRepository : IClienteRepository
     {
         return await _context.Clientes.AnyAsync(c => c.Email == email);
     }
+    public async Task<Cliente> AtualizarAsync(Cliente cliente)
+{
+    _context.Clientes.Update(cliente);
+    await _context.SaveChangesAsync();
+    return cliente;
+}
+
+public async Task ExcluirAsync(Cliente cliente)
+{
+    _context.Clientes.Remove(cliente);
+    await _context.SaveChangesAsync();
+}
+
 }

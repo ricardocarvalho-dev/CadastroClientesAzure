@@ -62,8 +62,9 @@ public class CriarClienteUseCase
                 clienteCriado.Id,
                 clienteCriado.Nome,
                 clienteCriado.Email,
-                clienteCriado.Celular);
-
+                clienteCriado.Celular,
+                clienteCriado.Mensagem);
+                
             return new ClienteDto
             {
                 Id = clienteCriado.Id,

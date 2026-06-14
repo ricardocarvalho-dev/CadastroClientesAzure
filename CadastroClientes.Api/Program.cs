@@ -60,6 +60,8 @@ builder.Services.AddScoped<IMessagingService, NotificationService>();
 // Registro dos Use Cases
 builder.Services.AddScoped<CriarClienteUseCase>();
 builder.Services.AddScoped<ListarClientesUseCase>();
+builder.Services.AddScoped<AtualizarClienteUseCase>();
+builder.Services.AddScoped<ExcluirClienteUseCase>();
 
 // CORS para permitir requisições do Blazor Web
 builder.Services.AddCors(options =>

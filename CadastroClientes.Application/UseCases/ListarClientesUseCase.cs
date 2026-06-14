@@ -29,9 +29,9 @@ public class ListarClientesUseCase
                 Nome = c.Nome,
                 Email = c.Email,
                 Celular = c.Celular,
+                Mensagem = c.Mensagem,   // ← novo campo
                 DataCadastro = c.DataCadastro
             });
-
             _logger.LogInformation($"Listados {clientesDto.Count()} clientes");
             return clientesDto;
         }
