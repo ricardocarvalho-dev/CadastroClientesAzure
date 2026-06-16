@@ -11,6 +11,9 @@
 
 <div class="cc-wrapper">
     <main class="cc-main">
+        <div class="cc-back-bar">
+            <a href="/" class="cc-btn-back">← Voltar ao menu</a>
+        </div>
         <div class="cc-page-header">
             <h1 class="cc-page-title">📋 Cadastro de Clientes</h1>
             <div class="cc-stat-badge">
@@ -200,7 +203,9 @@
 
     body { background: var(--cc-bg) !important; }
     .cc-wrapper { min-height: 100vh; background: var(--cc-bg); font-family: 'Segoe UI', system-ui, sans-serif; }
-
+    .cc-back-bar { margin-bottom: 1.25rem; }
+    .cc-btn-back { display: inline-flex; align-items: center; gap: .4rem; color: var(--cc-primary); font-size: .88rem; font-weight: 600; text-decoration: none; padding: .4rem .9rem; border-radius: 8px; border: 1.5px solid var(--cc-primary-light); background: var(--cc-primary-light); transition: all .2s; }
+    .cc-btn-back:hover { background: var(--cc-primary); color: #fff; }
     .cc-main { max-width: 1400px; margin: 0 auto; padding: 2rem; }
     .cc-page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
     .cc-page-title { font-size: 1.2rem; font-weight: 700; color: var(--cc-text); margin: 0; }

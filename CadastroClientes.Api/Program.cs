@@ -48,7 +48,13 @@ var rabbitMqUri = builder.Configuration["RabbitMQ:Uri"] ?? "amqp://guest:guest@l
 var connectionFactory = new ConnectionFactory
 {
     Uri = new Uri(rabbitMqUri),
-    DispatchConsumersAsync = true
+    DispatchConsumersAsync = true,
+    Ssl = new SslOption
+    {
+        Enabled = rabbitMqUri.StartsWith("amqps"),
+        AcceptablePolicyErrors = System.Net.Security.SslPolicyErrors.RemoteCertificateNameMismatch |
+                                 System.Net.Security.SslPolicyErrors.RemoteCertificateChainErrors
+    }
 };
 
 builder.Services.AddSingleton<IConnectionFactory>(connectionFactory);
