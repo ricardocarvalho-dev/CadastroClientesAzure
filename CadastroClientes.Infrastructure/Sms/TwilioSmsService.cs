@@ -30,8 +30,10 @@ public class TwilioSmsService : ISmsService
     {
         try
         {
+            var numeroFormatado = FormatarCelular(celular);  // ← formata aqui
+
             var message = await MessageResource.CreateAsync(
-                to: new Twilio.Types.PhoneNumber(celular),
+                to: new Twilio.Types.PhoneNumber(numeroFormatado),
                 messagingServiceSid: _messagingServiceSid,
                 body: $"Olá, {nomeCliente}! Recebemos seu cadastro: {mensagem}");
 
@@ -51,4 +53,16 @@ public class TwilioSmsService : ISmsService
             };
         }
     }
+
+    private static string FormatarCelular(string celular)
+    {
+        var soDigitos = new string(celular.Where(char.IsDigit).ToArray());
+
+        if (soDigitos.Length == 13) return "+" + soDigitos;      // ex: 5571991147042
+        if (soDigitos.Length == 11) return "+55" + soDigitos;    // ex: 71991147042
+        if (soDigitos.Length == 10) return "+550" + soDigitos;   // ex: sem o 9
+
+        return "+" + soDigitos; // fallback
+    }
+
 }

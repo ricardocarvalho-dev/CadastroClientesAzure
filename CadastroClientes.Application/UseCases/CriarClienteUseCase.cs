@@ -60,7 +60,7 @@ public class CriarClienteUseCase
                 clienteCriado.Email,
                 clienteCriado.Celular,
                 clienteCriado.Mensagem,
-                "SMS");
+                dto.Canal);
 
             // ✅ FIX: Mensagem incluída no retorno
             return new ClienteDto
